@@ -57,12 +57,4 @@ router.get(
   }
 );
 
-router.post(
-  "/auth/instagram/callback",
-  // AuthenticationMiddleware.authenticate.bind(),
-  async (request, response) => {
-    return await authInstagramAccessToken(request, response);
-  }
-);
-
 module.exports = router;

@@ -16,11 +16,16 @@ const AccountsSchema = new mongoose.Schema(
       enum: Object.values(ChannelType)
     },
     token: {
-      type: String
+      type: String,
+      default: null
     },
     secret: {
       type: String,
       default: null
+    },
+    expire: {
+      type: Date,
+      default: Date.now
     }
   },
   { timestamps: true, collection, minimize: false }
