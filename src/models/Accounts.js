@@ -11,15 +11,24 @@ const AccountsSchema = new mongoose.Schema(
       default: null
     },
     platform: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       default: null,
       enum: Object.values(ChannelType)
     },
     token: {
-      type: String
+      type: String,
+      default: null
+    },
+    refreshToken: {
+      type: String,
+      default: null
     },
     secret: {
       type: String,
+      default: null
+    },
+    expire: {
+      type: Date,
       default: null
     }
   },

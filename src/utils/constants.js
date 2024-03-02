@@ -9,7 +9,8 @@ const ChannelType = {
   TWITTER: "TWITTER",
   FACEBOOK: "FACEBOOK",
   INSTAGRAM: "INSTAGRAM",
-  LINKEDIN: "LINKEDIN"
+  LINKEDIN: "LINKEDIN",
+  REDDIT: "REDDIT"
 };
 
 module.exports = {

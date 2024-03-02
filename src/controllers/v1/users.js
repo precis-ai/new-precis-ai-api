@@ -1,4 +1,8 @@
 const express = require("express");
+const {
+  auth: authReddit,
+  authCallback: authRedditCallback
+} = require("../../services/reddit");
 const UserService = require("../../services/users");
 const {
   authInstagram,
@@ -38,6 +42,22 @@ router.put(
   AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await UserService.updateWorkspace(request, response);
+  }
+);
+
+router.get(
+  "/auth/reddit",
+  // AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await authReddit(request, response);
+  }
+);
+
+router.get(
+  "/auth/reddit/callback",
+  // AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await authRedditCallback(request, response);
   }
 );
 
