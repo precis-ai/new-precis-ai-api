@@ -1,5 +1,6 @@
 const express = require("express");
 const PostsService = require("../../services/posts");
+const RedditService = require("../../services/reddit");
 const AuthenticationMiddleware = require("../../middlewares/Authentication");
 
 const router = express.Router();
@@ -33,6 +34,14 @@ router.post(
   AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await PostsService.send(request, response);
+  }
+);
+
+router.get(
+  "/reddit/post",
+  // AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await RedditService.post(request, response);
   }
 );
 
