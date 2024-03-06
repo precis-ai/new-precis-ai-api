@@ -11,7 +11,7 @@ const linkedInState = "precis_ai_state";
 // LinkedIn Authentication
 exports.linkedinAuth = (_, res) => {
     res.redirect(
-        `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.LINKEDIN_CALLBACK_URI)}&state=${linkedInState}&scope=r_liteprofile%20w_member_social`
+        `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.LINKEDIN_CALLBACK_URI)}&state=${linkedInState}&scope=openid%20profile%20w_member_social`
     );
 };
 
@@ -42,6 +42,7 @@ exports.linkedinAuthCallback = async (req, res) => {
         });
 
         const data = await response.json();
+        // console.log(data);
 
         await AccountsModel.findOneAndUpdate(
             {
@@ -64,52 +65,63 @@ exports.linkedinAuthCallback = async (req, res) => {
 
 // Posting to LinkedIn
 exports.postToLinkedIn = async (req, res) => {
-    const { text } = req.query;
-    const account = await AccountsModel.findOne({ user: req.user._id, platform: "LINKEDIN" });
-  
+    const {text} = req.query; // "hello there"; 
+    const account = await AccountsModel.findOne({ platform: "LINKEDIN" });// TODO need to search by user id
+
     if (!account) {
-      return res.status(400).json({ success: false, message: "LinkedIn account not found" });
+        return res.status(400).json({ success: false, message: "LinkedIn account not found" });
     }
-  
     const accessToken = account.token;
-  
-    const payload = {
-      "author": `urn:li:person:${req.user.linkedinId}`, 
-      "lifecycleState": "PUBLISHED",
-      "specificContent": {
-        "com.linkedin.ugc.ShareContent": {
-          "shareCommentary": {
-            "text": text
-          },
-          "shareMediaCategory": "NONE"
-        }
-      },
-      "visibility": {
-        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
-      }
-    };
-  
-    try {
-      const response = await fetch(`https://api.linkedin.com/v2/ugcPosts`, {
-        method: "POST",
+
+    // Retrieve LinkedIn profile to get the LinkedIn user ID (personId)
+    const profileResponse = await fetch(`https://api.linkedin.com/v2/userinfo`, {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "X-Restli-Protocol-Version": "2.0.0"
+            Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(payload),
-      });
-  
-      if (response.ok) {
-        const responseData = await response.json();
-        const postId = response.headers.get('X-RestLi-Id'); // Capture the ID of the created post
-        res.status(200).json({ success: true, data: responseData, postId });
-      } else {
-        const errorData = await response.json();
-        res.status(400).json({ success: false, message: "Failed to post to LinkedIn", error: errorData });
-      }
+    });
+
+    const profileData = await profileResponse.json();
+    const linkedInUserId = profileData.id;
+    // console.log(profileData);
+    const payload = {
+        "author": `urn:li:person:${linkedInUserId}`,
+        "lifecycleState": "PUBLISHED",
+        "specificContent": {
+            "com.linkedin.ugc.ShareContent": {
+                "shareCommentary": {
+                    "text": text
+                },
+                "shareMediaCategory": "NONE"
+            }
+        },
+        "visibility": {
+            "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+        }
+    };
+
+    try {
+        const response = await fetch(`https://api.linkedin.com/v2/ugcPosts`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+                "X-Restli-Protocol-Version": "2.0.0"
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+            const responseData = await response.json();
+            const postId = response.headers.get('X-RestLi-Id'); // Capture the ID of the created post
+            res.status(200).json({ success: true, data: responseData, postId });
+        } else {
+            const errorData = await response.json();
+            res.status(400).json({ success: false, message: "Failed to post to LinkedIn", error: errorData });
+        }
     } catch (e) {
-      res.status(400).json({ success: false, error: e.toString() });
+        res.status(400).json({ success: false, error: e.toString() });
     }
-  };
-  
+};
+
+// TODO Redirect to auth again if needed
+
