@@ -66,7 +66,7 @@ exports.linkedinAuthCallback = async (req, res) => {
 // Posting to LinkedIn
 exports.postToLinkedIn = async (req, res) => {
     const {text} = req.query; // "hello there"; 
-    const account = await AccountsModel.findOne({ platform: "LINKEDIN" });// TODO need to search by user id
+    const account = await AccountsModel.findOne({ user: req.user._id, platform: "LINKEDIN" });
 
     if (!account) {
         return res.status(400).json({ success: false, message: "LinkedIn account not found" });
