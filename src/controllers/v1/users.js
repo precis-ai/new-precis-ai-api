@@ -9,10 +9,6 @@ const {
   authInstagramCallback,
   authInstagramAccessToken
 } = require("../../services/instagram");
-const {
-  linkedinAuth,
-  linkedinAuthCallback
-} = require("../../services/linkedin");
 
 const AuthenticationMiddleware = require("../../middlewares/Authentication");
 
@@ -87,22 +83,6 @@ router.post(
   // AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await authInstagramAccessToken(request, response);
-  }
-);
-
-router.get(
-  "/auth/linkedin",
-  // AuthenticationMiddleware.authenticate.bind(),
-  async (request, response) => {
-    return await linkedinAuth(request, response);
-  }
-);
-
-router.get(
-  "/auth/linkedin/callback",
-  // AuthenticationMiddleware.authenticate.bind(),
-  async (request, response) => {
-    return await linkedinAuthCallback(request, response);
   }
 );
 

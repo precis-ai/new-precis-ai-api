@@ -12,6 +12,7 @@ const completeChat = async content => {
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
+      // max_tokens: 280,
       messages: [{ role: "user", content }]
     });
 

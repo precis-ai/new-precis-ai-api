@@ -1,6 +1,6 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
-const AccountsModel = require("../models/Accounts");
+const ChannelsModel = require("../models/Channels");
 const { ChannelType } = require("../utils/constants");
 
 const reddit_state = "precis_ai_state";
@@ -40,10 +40,10 @@ exports.authCallback = async (req, res) => {
         .then(response => response.json())
         .then(body => body);
 
-      await AccountsModel.findOneAndUpdate(
+      await ChannelsModel.findOneAndUpdate(
         {
           user: req.user._id,
-          platform: ChannelType.REDDIT
+          platform: ChannelType.Reddit
         },
         {
           token: accessTokenData.access_token,
@@ -75,7 +75,7 @@ const refreshToken = async user => {
     process.env.REDDIT_CLIENT_ID + ":" + process.env.REDDIT_CLIENT_SECRET
   ).toString("base64");
 
-  const account = await AccountsModel.findOne({ user: user._id });
+  const account = await ChannelsModel.findOne({ user: user._id });
 
   const headers = {
     "Content-Type": "application/x-www-form-urlencoded",
@@ -97,10 +97,10 @@ const refreshToken = async user => {
       .then(response => response.json())
       .then(body => body);
 
-    await AccountsModel.findOneAndUpdate(
+    await ChannelsModel.findOneAndUpdate(
       {
         user: user._id,
-        platform: ChannelType.REDDIT
+        platform: ChannelType.Reddit
       },
       {
         token: accessTokenData.access_token,
@@ -130,13 +130,13 @@ exports.post = async (req, res) => {
       .json({ success: false, message: "Title and Content are required." });
   }
 
-  let account = await AccountsModel.findOne({ user: req.user._id });
+  let account = await ChannelsModel.findOne({ user: req.user._id });
 
   // Access token expired
   if (account.expire > Date.now()) {
     const refreshTokenResult = await refreshToken(req.user);
     if (refreshTokenResult.success) {
-      account = await AccountsModel.findOne({ user: req.user._id });
+      account = await ChannelsModel.findOne({ user: req.user._id });
     } else {
       return res.status(400).json({
         success: false,

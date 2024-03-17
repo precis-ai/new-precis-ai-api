@@ -6,11 +6,11 @@ const UserRoles = {
 };
 
 const ChannelType = {
-  TWITTER: "TWITTER",
-  FACEBOOK: "FACEBOOK",
-  INSTAGRAM: "INSTAGRAM",
-  LINKEDIN: "LINKEDIN",
-  REDDIT: "REDDIT"
+  Twitter: "Twitter",
+  Facebook: "Facebook",
+  Instagram: "Instagram",
+  LinkedIn: "LinkedIn",
+  Reddit: "Reddit"
 };
 
 module.exports = {
