@@ -7,7 +7,9 @@ const cors = require("cors");
 const DatabaseService = require("./services/db");
 
 // controllers
+const auth = require("./controllers/v1/auth");
 const users = require("./controllers/v1/users");
+const channels = require("./controllers/v1/channels");
 const posts = require("./controllers/v1/posts");
 
 // utils
@@ -79,7 +81,9 @@ app.get("/", (req, res) => {
   res.status(200).json({ success: true, message: "Howdy!!!" });
 });
 
+app.use("/v1/auth", auth);
 app.use("/v1/users", users);
+app.use("/v1/channels", channels);
 app.use("/v1/posts", posts);
 
 app.listen(Config.PORT, () => {
