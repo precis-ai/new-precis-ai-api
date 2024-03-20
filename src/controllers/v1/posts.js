@@ -23,7 +23,7 @@ router.post(
 );
 
 router.post(
-  "/",
+  "/create",
   AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await PostsService.create(request, response);

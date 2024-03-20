@@ -37,7 +37,9 @@ const summarize = async (request, response) => {
     }
 
     const openAiResponse = await OpenAIService.completeChat(
-      `Write a summary for ${description}`
+      `you are a professional summarizer. The summary needs to be less than 280 words. 
+      write a summary for 
+      ${description}`
     );
 
     logger.debug("openAiResponse : ", openAiResponse);
@@ -64,10 +66,9 @@ const create = async (request, response) => {
         .json({ success: false, message: "Summary is required." });
     }
 
-    const twitterPost = await OpenAIService.completeChat(
+    const openAiResponse = await OpenAIService.completeChat(
       `you are a professional advertisement creator.
-      the tweet needs to be less than 250 characters including hashtags and emojis.
-      write an advertising tweet for \n
+       write an advertising tweet for \n
        ${summary}`
     );
 
