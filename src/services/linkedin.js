@@ -83,6 +83,7 @@ const authCallback = async (request, response) => {
         },
         token: oauthResponse.access_token,
         expire: new Date(Date.now() + oauthResponse.expires_in * 1000),
+        deleted: false,
         oauth: oauth._id
       },
       { upsert: true, new: true }
