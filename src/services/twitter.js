@@ -140,6 +140,7 @@ const authCallback = async (request, response) => {
         },
         token: newClientLogin.accessToken,
         secret: newClientLogin.accessSecret,
+        deleted: false,
         oauth: oauth._id
       },
       { upsert: true, new: true }

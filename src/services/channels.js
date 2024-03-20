@@ -8,7 +8,7 @@ const list = async (request, response) => {
       user: request.userId,
       deleted: false
     });
-
+    console.log(channels);
     return response.status(200).json({
       success: true,
       data: channels

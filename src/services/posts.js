@@ -94,63 +94,65 @@ const create = async (request, response) => {
   }
 };
 
+const sendHelper = async (channels, user) => {
+  if (!channels.length) {
+    throw new Error("Channels are required.");
+  }
+
+  const twitterChannel = channels.find(
+    elem => elem.platform === ChannelType.Twitter
+  );
+
+  const linkedInChannel = channels.find(
+    elem => elem.platform === ChannelType.LinkedIn
+  );
+
+  if (twitterChannel) {
+    const twitterResponse = await TwitterService.tweet(
+      twitterChannel.content,
+      user._id
+    );
+
+    logger.debug("twitterResponse : ", twitterResponse);
+
+    await new PostsModel({
+      content: twitterChannel.content,
+      channel: ChannelType.Twitter,
+      metadata: {
+        id: twitterResponse.data.id
+      },
+      user: user._id,
+      workspace: user.workspace._id
+    }).save();
+  }
+
+  if (linkedInChannel) {
+    const linkedInResponse = await LinkedInService.postToLinkedIn(
+      linkedInChannel.content,
+      linkedInChannel.id
+    );
+
+    logger.debug("linkedInResponse : ", linkedInResponse);
+
+    if (linkedInResponse.success) {
+      await new PostsModel({
+        content: linkedInChannel.content,
+        channel: ChannelType.LinkedIn,
+        metadata: {
+          id: linkedInResponse.postId
+        },
+        user: user._id,
+        workspace: user.workspace._id
+      }).save();
+    }
+  }
+};
+
 const send = async (request, response) => {
   try {
     const { channels } = request.body;
 
-    if (!channels.length) {
-      return response
-        .status(400)
-        .json({ success: false, message: "Channels are required." });
-    }
-
-    const twitterChannel = channels.find(
-      elem => elem.platform === ChannelType.Twitter
-    );
-
-    const linkedInChannel = channels.find(
-      elem => elem.platform === ChannelType.LinkedIn
-    );
-
-    if (twitterChannel) {
-      const twitterResponse = await TwitterService.tweet(
-        twitterChannel.content,
-        request.userId
-      );
-
-      logger.debug("twitterResponse : ", twitterResponse);
-
-      await new PostsModel({
-        content: twitterChannel.content,
-        channel: ChannelType.Twitter,
-        metadata: {
-          id: twitterResponse.data.id
-        },
-        user: request.user._id,
-        workspace: request.user.workspace._id
-      }).save();
-    }
-
-    if (linkedInChannel) {
-      const linkedInResponse = await LinkedInService.postToLinkedIn(
-        linkedInChannel.content,
-        linkedInChannel.id
-      );
-
-      logger.debug("linkedInResponse : ", linkedInResponse);
-
-      if (linkedInResponse.success) {
-        await new PostsModel({
-          content: linkedInChannel.content,
-          channel: ChannelType.LinkedIn,
-          metadata: {
-            id: linkedInResponse.postId
-          },
-          user: request.user._id,
-          workspace: request.user.workspace._id
-        }).save();
-      }
-    }
+    sendHelper(channels, request.user);
 
     return response.status(200).json({
       success: true,
@@ -168,7 +170,8 @@ const PostsService = {
   list,
   summarize,
   create,
-  send
+  send,
+  sendHelper
 };
 
 module.exports = PostsService;
