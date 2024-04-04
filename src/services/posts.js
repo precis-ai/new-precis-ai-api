@@ -1,4 +1,5 @@
 const PostsModel = require("../models/Posts");
+const WorkspacesModel = require("../models/Workspaces");
 const TwitterService = require("./twitter");
 const {
   INTERNAL_SERVER_ERROR_MESSAGE,
@@ -66,8 +67,9 @@ const create = async (request, response) => {
         .json({ success: false, message: "Summary is required." });
     }
 
-    const openAiResponse = await OpenAIService.completeChat(
+    const twitterPost = await OpenAIService.completeChat(
       `you are a professional advertisement creator.
+       the tweet needs to be less than 250 characters including hashtags and emojis.
        write an advertising tweet for \n
        ${summary}`
     );
@@ -153,7 +155,14 @@ const send = async (request, response) => {
   try {
     const { channels } = request.body;
 
-    sendHelper(channels, request.user);
+    await sendHelper(channels, request.user);
+
+    await WorkspacesModel.findOneAndUpdate(
+      { _id: request.user.workspace._id },
+      {
+        postSent: true
+      }
+    );
 
     return response.status(200).json({
       success: true,

@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { UserRoles } = require("../utils/constants");
+const { UserRoles, UserStatus } = require("../utils/constants");
 
 const collection = "Users";
 
@@ -25,13 +25,17 @@ const UsersSchema = new mongoose.Schema(
     avatar: {
       type: String
     },
+    status: {
+      type: String,
+      enum: Object.values(UserStatus)
+    },
     workspace: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Workspaces",
       default: null
     }
   },
-  { timestamps: true, collection, minimize: false }
+  { timestamps: true, collection }
 );
 
 const UsersModel = mongoose.model(collection, UsersSchema);

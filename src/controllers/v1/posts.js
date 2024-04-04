@@ -24,7 +24,7 @@ router.post(
 );
 
 router.post(
-  "/create",
+  "/",
   AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await PostsService.create(request, response);
@@ -35,8 +35,7 @@ router.post(
   "/send",
   AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
-    return await ScheduleService.schedule(request, response);
-    // return await PostsService.send(request, response);
+    return await PostsService.send(request, response);
   }
 );
 
