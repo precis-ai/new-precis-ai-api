@@ -176,12 +176,71 @@ const send = async (request, response) => {
   }
 };
 
+const uploadMedia = async (request, response) => {
+  try {
+    // Handle file upload endpoint
+    // const { channels } = request.body;
+
+    const channels = [{
+      "platform": "Twitter"
+    }]
+
+    if (!channels.length) {
+      throw new Error("Channels are required.");
+    }
+
+    const twitterChannel = channels.find(
+      elem => elem.platform === ChannelType.Twitter
+    );
+
+    const linkedInChannel = channels.find(
+      elem => elem.platform === ChannelType.LinkedIn
+    );
+
+    if (twitterChannel) {
+      const twitterResponse = await TwitterService.uploadMedia(
+        request.file,
+        request.user._id
+      );
+
+      logger.debug("twitterUploadMediaResponse : ", twitterResponse);
+    }
+
+    if (linkedInChannel) {
+      const linkedInResponse = await LinkedInService.postToLinkedIn(
+        linkedInChannel.content,
+        linkedInChannel.id
+      );
+
+      logger.debug("linkedInResponse : ", linkedInResponse);
+
+      if (linkedInResponse.success) {
+        await new PostsModel({
+          content: linkedInChannel.content,
+          channel: ChannelType.LinkedIn,
+          metadata: {
+            id: linkedInResponse.postId
+          },
+          user: request.user._id,
+          workspace: request.user.workspace._id
+        }).save();
+      }
+    }
+  } catch (error) {
+    logger.error("PostsService - send() -> error : ", error);
+    return response
+      .status(400)
+      .json({ success: false, message: INTERNAL_SERVER_ERROR_MESSAGE });
+  }
+}
+
 const PostsService = {
   list,
   summarize,
   create,
   send,
-  sendHelper
+  sendHelper,
+  uploadMedia
 };
 
 module.exports = PostsService;
