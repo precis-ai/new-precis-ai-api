@@ -1,4 +1,5 @@
 const express = require("express");
+const multer = require('multer');
 const PostsService = require("../../services/posts");
 const RedditService = require("../../services/reddit");
 const LinkedInService = require("../../services/linkedin");
@@ -62,5 +63,35 @@ router.post(
     return await ScheduleService.schedule(request, response);
   }
 );
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const fileName = `${Date.now()}-${file.originalname}`;
+    cb(null, fileName);
+  }
+});
+
+const upload = multer({ storage: storage });
+
+router.post(
+  "/sendWithMedia",
+  AuthenticationMiddleware.authenticate.bind(),
+  upload.single('file'),
+  async (request, response) => {
+    return await PostsService.sendWithMedia(request, response);
+  }
+);
+
+router.post(
+  "/uploadMedia",
+  AuthenticationMiddleware.authenticate.bind(),
+  upload.single('file'),
+  async (request, response) => {
+    return await PostsService.uploadMedia(request, response);
+  }
+)
 
 module.exports = router;
