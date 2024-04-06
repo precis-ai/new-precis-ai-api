@@ -64,24 +64,31 @@ router.post(
   }
 );
 
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, 'uploads/');
-//   },
-//   filename: function (req, file, cb) {
-//     const fileName = `${Date.now()}-${file.originalname}`;
-//     cb(null, fileName);
-//   }
-// });
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const fileName = `${Date.now()}-${file.originalname}`;
+    cb(null, fileName);
+  }
+});
 
-// const upload = multer({ storage: storage });
+const upload = multer({ storage: storage });
 
-const upload = multer({dest: 'uploads/'});
+router.post(
+  "/sendWithMedia",
+  AuthenticationMiddleware.authenticate.bind(),
+  upload.single('file'),
+  async (request, response) => {
+    return await PostsService.sendWithMedia(request, response);
+  }
+);
 
 router.post(
   "/uploadMedia",
   AuthenticationMiddleware.authenticate.bind(),
-  upload.single('image'),
+  upload.single('file'),
   async (request, response) => {
     return await PostsService.uploadMedia(request, response);
   }

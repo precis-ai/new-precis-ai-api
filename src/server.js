@@ -43,11 +43,11 @@ const rawBodySaver = (req, res, buf, encoding) => {
   }
 };
 
-app.use(express.json({ verify: rawBodySaver, limit: "50mb" }));
-app.use(
-  express.urlencoded({ verify: rawBodySaver, extended: true, limit: "50mb" })
-);
-app.use(express.raw({ verify: rawBodySaver, type: "*/*", limit: "50mb" }));
+// app.use(express.json({ verify: rawBodySaver, limit: "50mb" }));
+// app.use(
+//   express.urlencoded({ verify: rawBodySaver, extended: true, limit: "50mb" })
+// );
+// app.use(express.raw({ verify: rawBodySaver, type: "*/*", limit: "50mb" }));
 
 const whitelist = [
   // local

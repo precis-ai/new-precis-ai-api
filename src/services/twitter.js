@@ -157,10 +157,14 @@ const authCallback = async (request, response) => {
   }
 };
 
-const tweet = async (content, userId) => {
+const tweet = async (content, userId, media_id) => {
   try {
     const { twitterClient } = await getClient(userId);
-    return await twitterClient.v2.tweet(content);
+    if (media_id) {
+      return await twitterClient.v2.tweet({text: content, media: {media_ids: [media_id]}});
+    } else {
+      return await twitterClient.v2.tweet(content);
+    }
   } catch (error) {
     logger.error("TwitterService - tweet() : ", error);
     throw error;
@@ -179,9 +183,9 @@ const uploadMedia = async (file_path, userId) => {
       };
     }
 
-    // const { twitterClient } = await getClient(userId);
-    // const mediaResult =  await twitterClient.v1.uploadMedia(file_path);
-    // console.log(mediaResult);
+    const { twitterClient } = await getClient(userId);
+    const mediaResult =  await twitterClient.v1.uploadMedia(file_path);
+    console.log(mediaResult);
     return mediaResult;
   } catch (error) {
     logger.error("TwitterService - uploadMedia() : ", error);

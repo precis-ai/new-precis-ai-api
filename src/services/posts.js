@@ -1,3 +1,4 @@
+const fs = require('fs');
 const PostsModel = require("../models/Posts");
 const WorkspacesModel = require("../models/Workspaces");
 const TwitterService = require("./twitter");
@@ -97,7 +98,7 @@ const create = async (request, response) => {
   }
 };
 
-const sendHelper = async (channels, user) => {
+const sendHelper = async (channels, user, mediaIdList = {}) => {
   if (!channels.length) {
     throw new Error("Channels are required.");
   }
@@ -113,9 +114,9 @@ const sendHelper = async (channels, user) => {
   if (twitterChannel) {
     const twitterResponse = await TwitterService.tweet(
       twitterChannel.content,
-      user._id
+      user._id,
+      ChannelType.Twitter in mediaIdList ? mediaIdList[ChannelType.Twitter] : null
     );
-
     logger.debug("twitterResponse : ", twitterResponse);
 
     await new PostsModel({
@@ -176,14 +177,9 @@ const send = async (request, response) => {
   }
 };
 
-const uploadMedia = async (request, response) => {
-  try {
+const uploadMediaHelper = async (file_path, channels, user) => {
     // Handle file upload endpoint
-    // const { channels } = request.body;
-
-    const channels = [{
-      "platform": "Twitter"
-    }]
+    var mediaIdList = {};
 
     if (!channels.length) {
       throw new Error("Channels are required.");
@@ -199,35 +195,66 @@ const uploadMedia = async (request, response) => {
 
     if (twitterChannel) {
       const twitterResponse = await TwitterService.uploadMedia(
-        request.file,
-        request.user._id
+        file_path,
+        user._id
       );
-
       logger.debug("twitterUploadMediaResponse : ", twitterResponse);
+      mediaIdList[ChannelType.Twitter] = twitterResponse;
     }
 
-    if (linkedInChannel) {
-      const linkedInResponse = await LinkedInService.postToLinkedIn(
-        linkedInChannel.content,
-        linkedInChannel.id
-      );
+    // if (linkedInChannel) {
 
-      logger.debug("linkedInResponse : ", linkedInResponse);
-
-      if (linkedInResponse.success) {
-        await new PostsModel({
-          content: linkedInChannel.content,
-          channel: ChannelType.LinkedIn,
-          metadata: {
-            id: linkedInResponse.postId
-          },
-          user: request.user._id,
-          workspace: request.user.workspace._id
-        }).save();
+    // }
+    fs.unlink(file_path, (err) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log('File is deleted.');
       }
-    }
+    });
+    return mediaIdList;
+}
+
+const uploadMedia = async (request, response) => {
+  try {
+    const channels = JSON.parse(request.body.channels);
+
+    const mediaIdList = await uploadMediaHelper(request.file.path, channels, request.user);
+
+    return response.status(200).json({
+      success: true,
+      mediaIdList: mediaIdList,
+      message: "Media upload successfully!"
+    });
   } catch (error) {
-    logger.error("PostsService - send() -> error : ", error);
+    logger.error("PostsService - uploadMedia() -> error : ", error);
+    return response
+      .status(400)
+      .json({ success: false, message: INTERNAL_SERVER_ERROR_MESSAGE });
+  }
+}
+
+const sendWithMedia = async (request, response) => {
+  try {
+    const channels= JSON.parse(request.body.channels);
+
+    const mediaIdList = await uploadMediaHelper(request.file.path, channels, request.user);
+
+    await sendHelper(channels, request.user, mediaIdList);
+
+    await WorkspacesModel.findOneAndUpdate(
+      { _id: request.user.workspace._id },
+      {
+        postSent: true
+      }
+    );
+
+    return response.status(200).json({
+      success: true,
+      message: "Post sent with media successfully!"
+    });
+  } catch (error) {
+    logger.error("PostsService - uploadMedia() -> error : ", error);
     return response
       .status(400)
       .json({ success: false, message: INTERNAL_SERVER_ERROR_MESSAGE });
@@ -240,7 +267,8 @@ const PostsService = {
   create,
   send,
   sendHelper,
-  uploadMedia
+  uploadMedia,
+  sendWithMedia
 };
 
 module.exports = PostsService;
