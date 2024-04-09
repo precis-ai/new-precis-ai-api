@@ -132,12 +132,12 @@ const postToLinkedIn = async (content, channelId) => {
     });
 
     if (response.ok) {
-      const responseData = await response.json();
-      console.log("responseData : ", responseData);
+      // const responseData = await response.json();
+      // console.log("responseData : ", responseData);
 
       const postId = response.headers.get("X-RestLi-Id"); // Capture the ID of the created post
 
-      console.log("postId : ", postId);
+      // console.log("postId : ", postId);
 
       return {
         success: true,

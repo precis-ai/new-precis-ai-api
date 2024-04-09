@@ -66,7 +66,7 @@ const create = async (request, response) => {
         .json({ success: false, message: "Summary is required." });
     }
 
-    const openAiResponse = await OpenAIService.completeChat(
+    const twitterPost = await OpenAIService.completeChat(
       `you are a professional advertisement creator.
        write an advertising tweet for \n
        ${summary}`
