@@ -1,7 +1,8 @@
-const fs = require('fs');
+const fs = require("fs");
 const PostsModel = require("../models/Posts");
 const WorkspacesModel = require("../models/Workspaces");
 const TwitterService = require("./twitter");
+const RedditService = require("./reddit");
 const {
   INTERNAL_SERVER_ERROR_MESSAGE,
   ChannelType
@@ -111,11 +112,17 @@ const sendHelper = async (channels, user, mediaIdList = {}) => {
     elem => elem.platform === ChannelType.LinkedIn
   );
 
+  const redditChannel = channels.find(
+    elem => elem.platform === ChannelType.Reddit
+  );
+
   if (twitterChannel) {
     const twitterResponse = await TwitterService.tweet(
       twitterChannel.content,
       user._id,
-      ChannelType.Twitter in mediaIdList ? mediaIdList[ChannelType.Twitter] : null
+      ChannelType.Twitter in mediaIdList
+        ? mediaIdList[ChannelType.Twitter]
+        : null
     );
     logger.debug("twitterResponse : ", twitterResponse);
 
@@ -150,6 +157,30 @@ const sendHelper = async (channels, user, mediaIdList = {}) => {
       }).save();
     }
   }
+
+  if (redditChannel) {
+    const redditResponse = await RedditService.post(
+      redditChannel.content,
+      user.id,
+      redditChannel.sr,
+      redditChannel.title,
+      ChannelType.Reddit in mediaIdList ? mediaIdList[ChannelType.Reddit] : null
+    );
+
+    logger.debug("redditResponse : ", redditResponse);
+
+    if (redditResponse.success) {
+      await new PostsModel({
+        content: redditChannel.content,
+        channel: ChannelType.Reddit,
+        metadata: {
+          id: redditResponse.postId
+        },
+        user: user._id,
+        workspace: user.workspace._id
+      }).save();
+    }
+  }
 };
 
 const send = async (request, response) => {
@@ -177,53 +208,58 @@ const send = async (request, response) => {
   }
 };
 
-const uploadMediaHelper = async (file_path, channels, user) => {
-    // Handle file upload endpoint
-    var mediaIdList = {};
+const uploadMediaHelper = async (filePath, channels, user) => {
+  // Handle file upload endpoint
+  const mediaIdList = {};
 
-    if (!channels.length) {
-      throw new Error("Channels are required.");
-    }
+  if (!channels.length) {
+    throw new Error("Channels are required.");
+  }
 
-    const twitterChannel = channels.find(
-      elem => elem.platform === ChannelType.Twitter
+  const twitterChannel = channels.find(
+    elem => elem.platform === ChannelType.Twitter
+  );
+
+  const linkedInChannel = channels.find(
+    elem => elem.platform === ChannelType.LinkedIn
+  );
+
+  const redditChannel = channels.find(
+    elem => elem.platform === ChannelType.Reddit
+  );
+
+  if (twitterChannel) {
+    const twitterResponse = await TwitterService.uploadMedia(
+      filePath,
+      user._id
     );
+    logger.debug("twitterUploadMediaResponse : ", twitterResponse);
+    mediaIdList[ChannelType.Twitter] = twitterResponse;
+  }
 
-    const linkedInChannel = channels.find(
-      elem => elem.platform === ChannelType.LinkedIn
-    );
+  // if (linkedInChannel) {
 
-    if (twitterChannel) {
-      const twitterResponse = await TwitterService.uploadMedia(
-        file_path,
-        user._id
-      );
-      logger.debug("twitterUploadMediaResponse : ", twitterResponse);
-      mediaIdList[ChannelType.Twitter] = twitterResponse;
-    }
+  // }
 
-    // if (linkedInChannel) {
-
-    // }
-    fs.unlink(file_path, (err) => {
-      if (err) {
-        console.error(err);
-      } else {
-        console.log('File is deleted.');
-      }
-    });
-    return mediaIdList;
-}
+  if (redditChannel) {
+    mediaIdList[ChannelType.Reddit] = filePath;
+  }
+  return mediaIdList;
+};
 
 const uploadMedia = async (request, response) => {
   try {
     const channels = JSON.parse(request.body.channels);
 
-    const mediaIdList = await uploadMediaHelper(request.file.path, channels, request.user);
+    const mediaIdList = await uploadMediaHelper(
+      request.file.path,
+      channels,
+      request.user
+    );
 
     return response.status(200).json({
       success: true,
-      mediaIdList: mediaIdList,
+      mediaIdList,
       message: "Media upload successfully!"
     });
   } catch (error) {
@@ -232,13 +268,17 @@ const uploadMedia = async (request, response) => {
       .status(400)
       .json({ success: false, message: INTERNAL_SERVER_ERROR_MESSAGE });
   }
-}
+};
 
 const sendWithMedia = async (request, response) => {
   try {
-    const channels= JSON.parse(request.body.channels);
+    const channels = JSON.parse(request.body.channels);
 
-    const mediaIdList = await uploadMediaHelper(request.file.path, channels, request.user);
+    const mediaIdList = await uploadMediaHelper(
+      request.file.path,
+      channels,
+      request.user
+    );
 
     await sendHelper(channels, request.user, mediaIdList);
 
@@ -248,6 +288,14 @@ const sendWithMedia = async (request, response) => {
         postSent: true
       }
     );
+
+    fs.unlink(request.file.path, err => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log("File is deleted.");
+      }
+    });
 
     return response.status(200).json({
       success: true,
@@ -259,7 +307,7 @@ const sendWithMedia = async (request, response) => {
       .status(400)
       .json({ success: false, message: INTERNAL_SERVER_ERROR_MESSAGE });
   }
-}
+};
 
 const PostsService = {
   list,

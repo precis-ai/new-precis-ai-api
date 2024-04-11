@@ -157,25 +157,27 @@ const authCallback = async (request, response) => {
   }
 };
 
-const tweet = async (content, userId, media_id) => {
+const tweet = async (content, userId, mediaId) => {
   try {
     const { twitterClient } = await getClient(userId);
-    if (media_id) {
-      return await twitterClient.v2.tweet({text: content, media: {media_ids: [media_id]}});
-    } else {
-      return await twitterClient.v2.tweet(content);
+    if (mediaId) {
+      return await twitterClient.v2.tweet({
+        text: content,
+        media: { mediaIds: [mediaId] }
+      });
     }
+    return await twitterClient.v2.tweet(content);
   } catch (error) {
     logger.error("TwitterService - tweet() : ", error);
     throw error;
   }
 };
 
-const uploadMedia = async (file_path, userId) => {
+const uploadMedia = async (filePath, userId) => {
   try {
-    console.log(file_path);
-    if (!file_path) {
+    if (!filePath) {
       logger.error("TwitterService - uploadMedia() : No file provided");
+      // eslint-disable-next-line
       throw {
         status: 400,
         error: true,
@@ -184,14 +186,13 @@ const uploadMedia = async (file_path, userId) => {
     }
 
     const { twitterClient } = await getClient(userId);
-    const mediaResult =  await twitterClient.v1.uploadMedia(file_path);
-    console.log(mediaResult);
+    const mediaResult = await twitterClient.v1.uploadMedia(filePath);
     return mediaResult;
   } catch (error) {
     logger.error("TwitterService - uploadMedia() : ", error);
     throw error;
   }
-}
+};
 
 const TwitterService = { generateAuthLink, authCallback, tweet, uploadMedia };
 
