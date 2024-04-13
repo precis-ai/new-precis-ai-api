@@ -9,7 +9,6 @@ const {
   authInstagramCallback,
   authInstagramAccessToken
 } = require("../../services/instagram");
-
 const AuthenticationMiddleware = require("../../middlewares/Authentication");
 
 const router = express.Router();
@@ -29,6 +28,30 @@ router.post("/signin", async (request, response) => {
 router.post("/signup", async (request, response) => {
   return await UserService.signup(request, response);
 });
+
+router.post(
+  "/onboard",
+  AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await UserService.onboard(request, response);
+  }
+);
+
+router.get(
+  "/members",
+  AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await UserService.listMembers(request, response);
+  }
+);
+
+router.post(
+  "/members",
+  AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await UserService.inviteMember(request, response);
+  }
+);
 
 router.put(
   "/profile",

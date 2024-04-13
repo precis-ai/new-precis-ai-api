@@ -5,6 +5,12 @@ const UserRoles = {
   MEMBER: "MEMBER"
 };
 
+const UserStatus = {
+  INVITED: "INVITED",
+  ACTIVE: "ACTIVE",
+  BLOCKED: "BLOCKED"
+};
+
 const ChannelType = {
   Twitter: "Twitter",
   Facebook: "Facebook",
@@ -16,5 +22,6 @@ const ChannelType = {
 module.exports = {
   INTERNAL_SERVER_ERROR_MESSAGE,
   UserRoles,
+  UserStatus,
   ChannelType
 };

@@ -9,8 +9,10 @@ const DatabaseService = require("./services/db");
 // controllers
 const auth = require("./controllers/v1/auth");
 const users = require("./controllers/v1/users");
+const marketingStrategy = require("./controllers/v1/marketing-strategy");
 const channels = require("./controllers/v1/channels");
 const posts = require("./controllers/v1/posts");
+const aiTools = require("./controllers/v1/ai-tools");
 
 // utils
 const Config = require("./utils/config");
@@ -40,6 +42,7 @@ const rawBodySaver = (req, res, buf, encoding) => {
     req.rawBody = buf.toString(encoding || "utf8");
   }
 };
+
 
 app.use(express.json({ verify: rawBodySaver, limit: "50mb" }));
 app.use(
@@ -83,8 +86,10 @@ app.get("/", (req, res) => {
 
 app.use("/v1/auth", auth);
 app.use("/v1/users", users);
+app.use("/v1/marketing-strategy", marketingStrategy);
 app.use("/v1/channels", channels);
 app.use("/v1/posts", posts);
+app.use("/v1/ai-tools", aiTools);
 
 app.listen(Config.PORT, () => {
   try {

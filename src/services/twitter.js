@@ -157,9 +157,15 @@ const authCallback = async (request, response) => {
   }
 };
 
-const tweet = async (content, userId) => {
+const tweet = async (content, userId, mediaId) => {
   try {
     const { twitterClient } = await getClient(userId);
+    if (mediaId) {
+      return await twitterClient.v2.tweet({
+        text: content,
+        media: { mediaIds: [mediaId] }
+      });
+    }
     return await twitterClient.v2.tweet(content);
   } catch (error) {
     logger.error("TwitterService - tweet() : ", error);
@@ -167,6 +173,27 @@ const tweet = async (content, userId) => {
   }
 };
 
-const TwitterService = { generateAuthLink, authCallback, tweet };
+const uploadMedia = async (filePath, userId) => {
+  try {
+    if (!filePath) {
+      logger.error("TwitterService - uploadMedia() : No file provided");
+      // eslint-disable-next-line
+      throw {
+        status: 400,
+        error: true,
+        message: "No file provided"
+      };
+    }
+
+    const { twitterClient } = await getClient(userId);
+    const mediaResult = await twitterClient.v1.uploadMedia(filePath);
+    return mediaResult;
+  } catch (error) {
+    logger.error("TwitterService - uploadMedia() : ", error);
+    throw error;
+  }
+};
+
+const TwitterService = { generateAuthLink, authCallback, tweet, uploadMedia };
 
 module.exports = TwitterService;

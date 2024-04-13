@@ -25,7 +25,7 @@ const OAuthsSchema = new mongoose.Schema(
       default: null
     }
   },
-  { timestamps: true, collection, minimize: false }
+  { timestamps: true, collection }
 );
 
 const OAuthsModel = mongoose.model(collection, OAuthsSchema);

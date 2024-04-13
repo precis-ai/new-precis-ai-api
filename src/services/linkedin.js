@@ -1,6 +1,7 @@
 const fetch = require("node-fetch");
 const OAuthsModel = require("../models/OAuths");
 const ChannelsModel = require("../models/Channels");
+const WorkspacesModel = require("../models/Workspaces");
 const { ChannelType } = require("../utils/constants");
 const Config = require("../utils/config");
 const logger = require("../utils/logger");
@@ -89,7 +90,14 @@ const authCallback = async (request, response) => {
       { upsert: true, new: true }
     );
 
-    response.json({ success: true });
+    await WorkspacesModel.findOneAndUpdate(
+      { _id: request.user.workspace._id },
+      {
+        socialAccountConnected: true
+      }
+    );
+
+    return response.json({ success: true });
   } catch (error) {
     logger.error("LinkedInService - authCallback() -> error : ", error);
     response.status(400).json({ success: false, error: error.toString() });

@@ -1,5 +1,4 @@
 const express = require("express");
-// eslint-disable-next-line import/no-extraneous-dependencies
 const multer = require("multer");
 const PostsService = require("../../services/posts");
 const RedditService = require("../../services/reddit");
@@ -28,7 +27,7 @@ router.post(
 );
 
 router.post(
-  "/create",
+  "/",
   AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await PostsService.create(request, response);
@@ -39,8 +38,7 @@ router.post(
   "/send",
   AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
-    return await ScheduleService.schedule(request, response);
-    // return await PostsService.send(request, response);
+    return await PostsService.send(request, response);
   }
 );
 
@@ -68,6 +66,7 @@ router.post(
   }
 );
 
+
 router.get(
   "/makeImage",
   // AuthenticationMiddleware.authenticate.bind(),
@@ -76,14 +75,44 @@ router.get(
   }
 );
 
-const upload = multer({ dest: "uploads/" });
+const upload2 = multer({ dest: "uploads/" });
 
 router.post(
   "/transcribeFile",
   // AuthenticationMiddleware.authenticate.bind(),
-  upload.single("file"),
+  upload2.single("file"),
   async (request, response) => {
     return await WhisperService.transcribeFile(request, response);
+  }
+);
+
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename(req, file, cb) {
+    const fileName = `${Date.now()}-${file.originalname}`;
+    cb(null, fileName);
+  }
+});
+
+const upload = multer({ storage });
+
+router.post(
+  "/sendWithMedia",
+  AuthenticationMiddleware.authenticate.bind(),
+  upload.single("file"),
+  async (request, response) => {
+    return await PostsService.sendWithMedia(request, response);
+  }
+);
+
+router.post(
+  "/uploadMedia",
+  AuthenticationMiddleware.authenticate.bind(),
+  upload.single("file"),
+  async (request, response) => {
+    return await PostsService.uploadMedia(request, response);
   }
 );
 
