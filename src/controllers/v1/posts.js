@@ -66,7 +66,6 @@ router.post(
   }
 );
 
-
 router.get(
   "/makeImage",
   // AuthenticationMiddleware.authenticate.bind(),

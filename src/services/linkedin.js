@@ -32,7 +32,7 @@ const getUserInfo = async token => {
 // LinkedIn Authentication Callback
 const authCallback = async (request, response) => {
   try {
-    const { state, code } = request.body;
+    const { state, code } = request.query;
 
     if (state !== linkedInState) {
       return response.status(400).json({
@@ -49,6 +49,8 @@ const authCallback = async (request, response) => {
       client_secret: Config.LINKEDIN_CLIENT_SECRET
     });
 
+    // console.log("-----params : ", params.toString());
+
     const oauthRequest = await fetch(
       `https://www.linkedin.com/oauth/v2/accessToken`,
       {
@@ -60,7 +62,7 @@ const authCallback = async (request, response) => {
 
     const oauthResponse = await oauthRequest.json();
 
-    logger.debug("oauthResponse : ", oauthResponse);
+    // console.log("------oauthResponse : ", oauthResponse);
 
     const oauth = await new OAuthsModel({
       platform: ChannelType.LinkedIn,
@@ -90,12 +92,17 @@ const authCallback = async (request, response) => {
       { upsert: true, new: true }
     );
 
-    await WorkspacesModel.findOneAndUpdate(
-      { _id: request.user.workspace._id },
-      {
-        socialAccountConnected: true
-      }
-    );
+    // TODO - IDK what this does but it always causes error
+    try {
+      await WorkspacesModel.findOneAndUpdate(
+        { _id: request.user.workspace._id },
+        {
+          socialAccountConnected: true
+        }
+      );
+    } catch (error) {
+      logger.debug("error : ", error);
+    }
 
     return response.json({ success: true });
   } catch (error) {
