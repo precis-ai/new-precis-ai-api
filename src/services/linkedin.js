@@ -32,7 +32,7 @@ const getUserInfo = async token => {
 // LinkedIn Authentication Callback
 const authCallback = async (request, response) => {
   try {
-    const { state, code } = request.query;
+    const { state, code } = request.body;
 
     if (state !== linkedInState) {
       return response.status(400).json({
@@ -49,8 +49,6 @@ const authCallback = async (request, response) => {
       client_secret: Config.LINKEDIN_CLIENT_SECRET
     });
 
-    // console.log("-----params : ", params.toString());
-
     const oauthRequest = await fetch(
       `https://www.linkedin.com/oauth/v2/accessToken`,
       {
@@ -61,8 +59,6 @@ const authCallback = async (request, response) => {
     );
 
     const oauthResponse = await oauthRequest.json();
-
-    // console.log("------oauthResponse : ", oauthResponse);
 
     const oauth = await new OAuthsModel({
       platform: ChannelType.LinkedIn,

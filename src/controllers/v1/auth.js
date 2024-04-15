@@ -21,9 +21,9 @@ router.post(
   }
 );
 
-router.get(
+router.post(
   "/linkedin/callback",
-  // AuthenticationMiddleware.authenticate.bind(),
+  AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await LinkedInService.authCallback(request, response);
   }
