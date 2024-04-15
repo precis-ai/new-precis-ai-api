@@ -58,6 +58,16 @@ router.get(
   }
 );
 
+// TODO: Remove this route
+// Used to avoid editing posts service for now
+router.get(
+  "/linkedin/testPost",
+  // AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await LinkedInService.postToLinkedInImage("Hello World", "42");
+  }
+);
+
 router.post(
   "/schedule",
   AuthenticationMiddleware.authenticate.bind(),
