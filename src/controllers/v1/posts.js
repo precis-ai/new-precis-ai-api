@@ -5,6 +5,8 @@ const RedditService = require("../../services/reddit");
 const LinkedInService = require("../../services/linkedin");
 const ScheduleService = require("../../services/schedule");
 const AuthenticationMiddleware = require("../../middlewares/Authentication");
+const DalleService = require("../../services/dall-e");
+const WhisperService = require("../../services/whisper");
 
 const router = express.Router();
 
@@ -56,11 +58,40 @@ router.get(
   }
 );
 
+// TODO: Remove this route
+// Used to avoid editing posts service for now
+router.get(
+  "/linkedin/testPost",
+  // AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await LinkedInService.postToLinkedInImage("Hello World", "42");
+  }
+);
+
 router.post(
   "/schedule",
   AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await ScheduleService.schedule(request, response);
+  }
+);
+
+router.get(
+  "/makeImage",
+  // AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await DalleService.makeImage(request, response);
+  }
+);
+
+const upload2 = multer({ dest: "uploads/" });
+
+router.post(
+  "/transcribeFile",
+  // AuthenticationMiddleware.authenticate.bind(),
+  upload2.single("file"),
+  async (request, response) => {
+    return await WhisperService.transcribeFile(request, response);
   }
 );
 

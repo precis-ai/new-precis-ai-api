@@ -1,4 +1,6 @@
 const fetch = require("node-fetch");
+const fs = require('fs').promises;
+const path = require("path");
 const OAuthsModel = require("../models/OAuths");
 const ChannelsModel = require("../models/Channels");
 const WorkspacesModel = require("../models/Workspaces");
@@ -60,8 +62,6 @@ const authCallback = async (request, response) => {
 
     const oauthResponse = await oauthRequest.json();
 
-    logger.debug("oauthResponse : ", oauthResponse);
-
     const oauth = await new OAuthsModel({
       platform: ChannelType.LinkedIn,
       response: oauthResponse,
@@ -90,17 +90,137 @@ const authCallback = async (request, response) => {
       { upsert: true, new: true }
     );
 
-    await WorkspacesModel.findOneAndUpdate(
-      { _id: request.user.workspace._id },
-      {
-        socialAccountConnected: true
-      }
-    );
+    try {
+      await WorkspacesModel.findOneAndUpdate(
+        { _id: request.user.workspace._id },
+        {
+          socialAccountConnected: true
+        }
+      );
+    } catch (error) {
+      logger.debug("error : ", error);
+    }
 
     return response.json({ success: true });
   } catch (error) {
     logger.error("LinkedInService - authCallback() -> error : ", error);
     response.status(400).json({ success: false, error: error.toString() });
+  }
+};
+
+const postToLinkedInImage = async (content, channelId) => {
+  try {
+    const channel = await ChannelsModel.findById(channelId);
+    const { token } = channel;
+
+    // TODO : If using multer to upload image. Can grab with req.file.path
+    // Either pass image path or image buffer
+    // Hardcoded image path because I don't know how to fit multer here
+    const file_path = path.join(__dirname, "test.jpg");
+
+    const imageData = await fs.readFile(file_path);
+
+    const linkedInUserId = channel.userInfo.id;
+    // console.log("linkedInUserId : ", linkedInUserId);
+
+    // Images must be uploaded to LinkedIn before they can be shared
+    const initUploadData = {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Restli-Protocol-Version": "2.0.0",
+        "LinkedIn-Version": "202403"
+      },
+      body: JSON.stringify({
+        initializeUploadRequest: {
+          owner: `urn:li:person:${linkedInUserId}`
+        }
+      })
+    };
+
+    const getImageUploadUrl = await fetch(
+      "https://api.linkedin.com/rest/images?action=initializeUpload",
+      initUploadData
+    );
+    const uploadUrlData = await getImageUploadUrl.json();
+    // console.log("uploadUrlData : ", uploadUrlData);
+    const { uploadUrl, image } = uploadUrlData.value;
+    // console.log("uploadUrl : ", uploadUrl);
+
+    const uploadImage = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: imageData
+    });
+    logger.debug("uploadImage : ", uploadImage);
+
+    const data = {
+      author: `urn:li:person:${linkedInUserId}`,
+      commentary: content,
+      visibility: "PUBLIC",
+      distribution: {
+        feedDistribution: "MAIN_FEED",
+        targetEntities: [],
+        thirdPartyDistributionChannels: []
+      },
+      content: {
+        media: {
+          title: "Image",
+          id: image
+        }
+      },
+      lifecycleState: "PUBLISHED",
+      isReshareDisabledByAuthor: false
+    };
+
+    const options = {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Restli-Protocol-Version": "2.0.0",
+        "LinkedIn-Version": "202403",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    };
+
+    const response = await fetch(
+      `https://api.linkedin.com/rest/posts`,
+      options
+    );
+    logger.debug("response : ", response);
+
+    // Todo : you can remove this if you want
+    return response;
+    // TODO : you can bring this back also
+    /*
+    if (response.ok) {
+      // const responseData = await response.json();
+      // console.log("responseData : ", responseData);
+
+      // Id of the post:  x-restli-id
+      const postId = response.headers.get("X-RestLi-Id"); // Capture the ID of the created post
+
+      // console.log("postId : ", postId);
+
+      return {
+        success: true,
+        postId
+      };
+    }
+
+    const errorData = await response.json();
+
+    return {
+      success: false,
+      error: errorData
+    };
+    */
+  } catch (error) {
+    logger.error("postToLinkedIn() -> error : ", error);
+    throw error;
   }
 };
 
@@ -140,12 +260,12 @@ const postToLinkedIn = async (content, channelId) => {
     });
 
     if (response.ok) {
-      const responseData = await response.json();
-      console.log("responseData : ", responseData);
+      // const responseData = await response.json();
+      // console.log("responseData : ", responseData);
 
       const postId = response.headers.get("X-RestLi-Id"); // Capture the ID of the created post
 
-      console.log("postId : ", postId);
+      // console.log("postId : ", postId);
 
       return {
         success: true,
@@ -165,11 +285,10 @@ const postToLinkedIn = async (content, channelId) => {
   }
 };
 
-// TODO Redirect to auth again if needed
-
 const LinkedInService = {
   authCallback,
-  postToLinkedIn
+  postToLinkedIn,
+  postToLinkedInImage
 };
 
 module.exports = LinkedInService;
