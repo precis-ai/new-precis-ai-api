@@ -252,41 +252,32 @@ const post = async (content, userId, sr, title, filePath) => {
     }
   }
 
-  // const headers = {
-  //   // "Content-Type": "application/json",
-  //   Authorization: "Bearer " + account.token
-  // };
-
-  // // const u = new URLSearchParams({
-  // //   sr,
-  // //   title,
-  // //   text: content,
-  // //   kind: "self"
-  // // }).toString();
-
-  // const bodyForm = new FormData();
-  // bodyForm.append("filepath", filePath);
-  // bodyForm.append("mimetype", "image/jpeg");
-
   try {
-    // const uploadURLResponse = await fetch(
-    //   `https://oauth.reddit.com/api/media/asset.json`,
-    //   {
-    //     method: "POST",
-    //     headers,
-    //     body: bodyForm
-    //   }
-    // ).then(response => response.json());
+    const headers = {
+      Authorization: "Bearer " + account.token
+    };
 
-    // console.log(uploadURLResponse);
+    const bodyForm = new FormData();
+    bodyForm.append("filepath", filePath);
+    bodyForm.append("mimetype", "image/jpeg");
+    const uploadURLResponse = await fetch(
+      `https://oauth.reddit.com/api/media/asset.json`,
+      {
+        method: "POST",
+        headers,
+        body: bodyForm
+      }
+    ).then(response => response.json());
 
-    // const file = await fs.readFile(filePath);
-    // const fileName = path.basename(filePath);
-    // const uploadURL = `https:${uploadURLResponse.args.action}`;
-    // const { fields } = uploadURLResponse.args;
-    // // const listenWSUrl = uploadURLResponse.asset.websocket_url;
+    console.log(uploadURLResponse);
 
-    // const imageURL = await uploadToAWS(uploadURL, fields, file, fileName);
+    const file = await fs.readFile(filePath);
+    const fileName = path.basename(filePath);
+    const uploadURL = `https:${uploadURLResponse.args.action}`;
+    const { fields } = uploadURLResponse.args;
+    // const listenWSUrl = uploadURLResponse.asset.websocket_url;
+
+    const imageURL = await uploadToAWS(uploadURL, fields, file, fileName);
 
     logger.debug("token : ", account.token);
 
@@ -307,12 +298,20 @@ const post = async (content, userId, sr, title, filePath) => {
     logger.debug("title : ", title.trim());
     logger.debug("content : ", content.trim());
 
-    const u = new URLSearchParams({
-      sr,
-      title: String(title).trim(),
-      text: String(content).trim(),
-      kind: "self"
-    }).toString();
+    const u = filePath
+      ? new URLSearchParams({
+          sr,
+          title,
+          text: content,
+          kind: "image",
+          url: imageURL
+        }).toString()
+      : new URLSearchParams({
+          sr,
+          title,
+          text: content,
+          kind: "self"
+        }).toString();
 
     logger.debug("u : ", u);
 
