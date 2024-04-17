@@ -1,5 +1,5 @@
 const fetch = require("node-fetch");
-const fs = require('fs').promises;
+const fs = require("fs").promises;
 const path = require("path");
 const OAuthsModel = require("../models/OAuths");
 const ChannelsModel = require("../models/Channels");
@@ -12,7 +12,7 @@ const linkedInState = "precis_ai_state";
 
 const getUserInfo = async token => {
   try {
-    const request = await fetch(`https://api.linkedin.com/v2/userinfo`, {
+    const request = await fetch("https://api.linkedin.com/v2/userinfo", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -90,21 +90,19 @@ const authCallback = async (request, response) => {
       { upsert: true, new: true }
     );
 
-    try {
-      await WorkspacesModel.findOneAndUpdate(
-        { _id: request.user.workspace._id },
-        {
-          socialAccountConnected: true
-        }
-      );
-    } catch (error) {
-      logger.debug("error : ", error);
-    }
+    await WorkspacesModel.findOneAndUpdate(
+      { _id: request.user.workspace._id },
+      {
+        socialAccountConnected: true
+      }
+    );
 
     return response.json({ success: true });
   } catch (error) {
     logger.error("LinkedInService - authCallback() -> error : ", error);
-    response.status(400).json({ success: false, error: error.toString() });
+    return response
+      .status(400)
+      .json({ success: false, error: error.toString() });
   }
 };
 

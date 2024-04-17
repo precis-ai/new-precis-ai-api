@@ -1,98 +1,134 @@
-require("dotenv").config();
 const fetch = require("node-fetch");
-const fs = require("fs/promises");
 const FormData = require("form-data");
 const { XMLParser } = require("fast-xml-parser");
-const path = require("path");
-const UsersModel = require("../models/Users");
+const OAuthsModel = require("../models/OAuths");
 const ChannelsModel = require("../models/Channels");
-const { ChannelType } = require("../utils/constants");
+const WorkspacesModel = require("../models/Workspaces");
+const {
+  ChannelType,
+  INTERNAL_SERVER_ERROR_MESSAGE
+} = require("../utils/constants");
+const Config = require("../utils/config");
 const logger = require("../utils/logger");
 
 const reddit_state = "precis_ai_state";
 
-// Reddit Authentication
-exports.auth = (_, res) => {
-  res.redirect(
-    `https://www.reddit.com/api/v1/authorize?client_id=${process.env.REDDIT_CLIENT_ID}&response_type=code&redirect_uri=${process.env.REDDIT_CALLBACK_URI}&duration=permanent&state=${reddit_state}&scope=identity submit`
-  );
+const getUserInfo = async token => {
+  try {
+    const request = await fetch("https://oauth.reddit.com/api/v1/me", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const response = await request.json();
+
+    logger.debug("user info : ", response);
+
+    return response;
+  } catch (error) {
+    logger.error("RedditService: getUserInfo() -> error : ", error);
+    throw error;
+  }
 };
 
-// Reddit Authentication Callback
-exports.authCallback = async (req, res) => {
-  const { state, code } = req.query;
-  if (state === reddit_state) {
-    const base64encodedData = Buffer.from(
-      process.env.REDDIT_CLIENT_ID + ":" + process.env.REDDIT_CLIENT_SECRET
-    ).toString("base64");
+const authCallback = async (request, response) => {
+  const { state, code } = request.body;
 
-    const headers = {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: "Basic " + base64encodedData
-    };
-    try {
-      const accessTokenData = await fetch(
-        `https://www.reddit.com/api/v1/access_token`,
-        {
-          method: "POST",
-          headers,
-          body: new URLSearchParams({
-            grant_type: "authorization_code",
-            code,
-            redirect_uri: process.env.REDDIT_CALLBACK_URI
-          }).toString()
-        }
-      ).then(response => response.json());
-
-      console.log("Reddit access token data:");
-      console.log(accessTokenData);
-
-      if ("error" in accessTokenData) {
-        // eslint-disable-next-line no-throw-literal
-        throw {
-          error: true,
-          message: accessTokenData
-        };
-      }
-
-      const user = await UsersModel.findOne({
-        email: "nicklin1219@gmail.com"
-      });
-
-      await ChannelsModel.findOneAndUpdate(
-        {
-          // user: req.user._id,
-          user: user._id,
-          platform: ChannelType.Reddit
-        },
-        {
-          token: accessTokenData.access_token,
-          refreshToken: accessTokenData.refresh_token,
-          expire: new Date(Date.now() + accessTokenData.expires_in * 1000)
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
-
-      return res.status(400).json({
-        success: true
-      });
-    } catch (e) {
-      return res.status(400).json({
-        success: false,
-        e
-      });
-    }
-  } else {
-    return res.status(400).json({
+  if (state !== reddit_state) {
+    return response.status(400).json({
       success: false,
-      error: "State not matching"
+      error: "State does not match."
     });
+  }
+
+  const base64encodedData = Buffer.from(
+    Config.REDDIT_CLIENT_ID + ":" + Config.REDDIT_CLIENT_SECRET
+  ).toString("base64");
+
+  const headers = {
+    "Content-Type": "application/x-www-form-urlencoded",
+    Authorization: "Basic " + base64encodedData
+  };
+
+  try {
+    const oauthRequest = await fetch(
+      `https://www.reddit.com/api/v1/access_token`,
+      {
+        method: "POST",
+        headers,
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: Config.REDDIT_CALLBACK_URI
+        }).toString()
+      }
+    );
+
+    const oauthResponse = await oauthRequest.json();
+
+    logger.debug("oauthResponse : ", oauthResponse);
+
+    const oauth = await new OAuthsModel({
+      platform: ChannelType.Reddit,
+      response: oauthResponse,
+      user: request.userId
+    }).save();
+
+    if ("error" in oauthResponse) {
+      // eslint-disable-next-line no-throw-literal
+      throw {
+        error: true,
+        message: oauthResponse
+      };
+    }
+
+    const userInfoResponse = await getUserInfo(oauthResponse.access_token);
+
+    await ChannelsModel.findOneAndUpdate(
+      {
+        user: request.userId,
+        platform: ChannelType.Reddit
+      },
+      {
+        userInfo: {
+          id: userInfoResponse.id,
+          name: userInfoResponse.subreddit.display_name_prefixed,
+          handle: userInfoResponse.name,
+          picture: userInfoResponse.icon_img
+        },
+        token: oauthResponse.access_token,
+        refreshToken: oauthResponse.refresh_token,
+        expire: new Date(Date.now() + oauthResponse.expires_in * 1000),
+        deleted: false,
+        oauth: oauth._id
+      },
+      { upsert: true, new: true }
+    );
+
+    await WorkspacesModel.findOneAndUpdate(
+      { _id: request.user.workspace._id },
+      {
+        socialAccountConnected: true
+      }
+    );
+
+    return response.status(200).json({
+      success: true
+    });
+  } catch (error) {
+    logger.error("RedditService - authCallback() -> error : ", error);
+    return response
+      .status(400)
+      .json({ success: false, message: INTERNAL_SERVER_ERROR_MESSAGE });
   }
 };
 
 const refreshToken = async userId => {
   const base64encodedData = Buffer.from(
-    process.env.REDDIT_CLIENT_ID + ":" + process.env.REDDIT_CLIENT_SECRET
+    Config.REDDIT_CLIENT_ID + ":" + Config.REDDIT_CLIENT_SECRET
   ).toString("base64");
 
   const account = await ChannelsModel.findOne({
@@ -104,6 +140,7 @@ const refreshToken = async userId => {
     "Content-Type": "application/x-www-form-urlencoded",
     Authorization: "Basic " + base64encodedData
   };
+
   try {
     const accessTokenData = await fetch(
       `https://www.reddit.com/api/v1/access_token`,
@@ -113,13 +150,12 @@ const refreshToken = async userId => {
         body: new URLSearchParams({
           grant_type: "refresh_token",
           refresh_token: account.refreshToken,
-          redirect_uri: process.env.REDDIT_CALLBACK_URI
+          redirect_uri: Config.REDDIT_CALLBACK_URI
         }).toString()
       }
     ).then(response => response.json());
 
-    console.log("Refresh Token result:");
-    console.log(accessTokenData);
+    logger.debug("Refresh Token result : ", accessTokenData);
 
     if ("error" in accessTokenData) {
       // eslint-disable-next-line no-throw-literal
@@ -138,24 +174,23 @@ const refreshToken = async userId => {
         token: accessTokenData.access_token,
         refreshToken: accessTokenData.refresh_token,
         expire: new Date(Date.now() + accessTokenData.expires_in * 1000)
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      }
     );
 
     return {
       success: true
     };
-  } catch (e) {
-    console.log(e);
+  } catch (error) {
+    logger.error(error);
     // eslint-disable-next-line no-throw-literal
     throw {
       success: false,
-      e
+      error
     };
   }
 };
 
-async function uploadToAWS(uploadURL, fields, buffer, filename) {
+const uploadToAWS = async (uploadURL, fields, buffer, filename) => {
   const bodyForm = new FormData();
   fields.forEach(field => bodyForm.append(...Object.values(field)));
   bodyForm.append("file", buffer, filename);
@@ -182,9 +217,9 @@ async function uploadToAWS(uploadURL, fields, buffer, filename) {
     console.error("CDN Response:", response);
     throw e;
   }
-}
+};
 
-exports.post = async (content, userId, sr, title, filePath) => {
+const post = async (content, userId, sr, title, filePath) => {
   if (!content || !sr || !title) {
     // eslint-disable-next-line
     throw {
@@ -292,3 +327,11 @@ exports.post = async (content, userId, sr, title, filePath) => {
     throw error;
   }
 };
+
+const RedditService = {
+  authCallback,
+  refreshToken,
+  post
+};
+
+module.exports = RedditService;

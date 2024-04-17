@@ -1,6 +1,7 @@
 const express = require("express");
 const TwitterService = require("../../services/twitter");
 const LinkedInService = require("../../services/linkedin");
+const RedditService = require("../../services/reddit");
 const AuthenticationMiddleware = require("../../middlewares/Authentication");
 
 const router = express.Router();
@@ -26,6 +27,14 @@ router.post(
   AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await LinkedInService.authCallback(request, response);
+  }
+);
+
+router.post(
+  "/reddit/callback",
+  AuthenticationMiddleware.authenticate.bind(),
+  async (request, response) => {
+    return await RedditService.authCallback(request, response);
   }
 );
 

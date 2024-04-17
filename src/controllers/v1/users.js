@@ -1,14 +1,10 @@
 const express = require("express");
-const {
-  auth: authReddit,
-  authCallback: authRedditCallback
-} = require("../../services/reddit");
 const UserService = require("../../services/users");
-const {
-  authInstagram,
-  authInstagramCallback,
-  authInstagramAccessToken
-} = require("../../services/instagram");
+// const {
+//   authInstagram,
+//   authInstagramCallback,
+//   authInstagramAccessToken
+// } = require("../../services/instagram");
 const AuthenticationMiddleware = require("../../middlewares/Authentication");
 
 const router = express.Router();
@@ -69,44 +65,16 @@ router.put(
   }
 );
 
-router.get(
-  "/auth/reddit",
-  // AuthenticationMiddleware.authenticate.bind(),
-  async (request, response) => {
-    return await authReddit(request, response);
-  }
-);
+// router.get("/auth/instagram", async (request, response) => {
+//   return await authInstagram(request, response);
+// });
 
-router.get(
-  "/auth/reddit/callback",
-  // AuthenticationMiddleware.authenticate.bind(),
-  async (request, response) => {
-    return await authRedditCallback(request, response);
-  }
-);
+// router.get("/auth/instagram/callback", async (request, response) => {
+//   return await authInstagramCallback(request, response);
+// });
 
-router.get(
-  "/auth/instagram",
-  // AuthenticationMiddleware.authenticate.bind(),
-  async (request, response) => {
-    return await authInstagram(request, response);
-  }
-);
-
-router.get(
-  "/auth/instagram/callback",
-  // AuthenticationMiddleware.authenticate.bind(),
-  async (request, response) => {
-    return await authInstagramCallback(request, response);
-  }
-);
-
-router.post(
-  "/auth/instagram/callback",
-  // AuthenticationMiddleware.authenticate.bind(),
-  async (request, response) => {
-    return await authInstagramAccessToken(request, response);
-  }
-);
+// router.post("/auth/instagram/callback", async (request, response) => {
+//   return await authInstagramAccessToken(request, response);
+// });
 
 module.exports = router;
