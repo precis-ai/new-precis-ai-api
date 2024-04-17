@@ -288,6 +288,8 @@ const post = async (content, userId, sr, title, filePath) => {
 
     // const imageURL = await uploadToAWS(uploadURL, fields, file, fileName);
 
+    logger.debug("token : ", account.token);
+
     const postHeaders = {
       "Content-Type": "application/json",
       Authorization: "Bearer " + account.token
@@ -301,25 +303,34 @@ const post = async (content, userId, sr, title, filePath) => {
     //   // url: "https://i.ibb.co/cNfXLhv/golden-state-warriors-logo.jpg"
     // }).toString();
 
+    logger.debug("sr : ", sr);
+    logger.debug("title : ", title.trim());
+    logger.debug("content : ", content.trim());
+
     const u = new URLSearchParams({
       sr,
-      title,
-      text: content,
+      title: String(title).trim(),
+      text: String(content).trim(),
       kind: "self"
     }).toString();
 
-    const redditResponse = await fetch(
+    logger.debug("u : ", u);
+
+    const redditRequest = await fetch(
       `https://oauth.reddit.com/api/submit.json?${u}`,
       {
         method: "POST",
         postHeaders,
-        body: {
+        body: JSON.stringify({
           api_type: "json",
           resubmit: "true",
           send_replies: "true"
-        }
+        })
       }
-    ).then(response => response.json());
+    );
+
+    const redditResponse = await redditRequest.json();
+
     console.log(redditResponse);
     return redditResponse;
   } catch (error) {

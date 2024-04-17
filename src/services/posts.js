@@ -84,11 +84,22 @@ const create = async (request, response) => {
 
     logger.debug("linkedInPost : ", linkedInPost);
 
+    const redditPost = await OpenAIService.completeChat(
+      `Create a Reddit post in the given format. 
+        Format: 
+          Title: ...
+          Post: ...
+      for the following summary : "${summary}"`
+    );
+
+    logger.debug("redditPost : ", redditPost);
+
     return response.status(200).json({
       success: true,
       data: {
         twitterPost,
-        linkedInPost
+        linkedInPost,
+        redditPost
       }
     });
   } catch (error) {
@@ -161,13 +172,13 @@ const sendHelper = async (channels, user, mediaIdList = {}) => {
   if (redditChannel) {
     const redditResponse = await RedditService.post(
       redditChannel.content,
-      user.id,
-      redditChannel.sr,
+      user._id,
+      "r/precisai",
       redditChannel.title,
       ChannelType.Reddit in mediaIdList ? mediaIdList[ChannelType.Reddit] : null
     );
 
-    logger.debug("redditResponse : ", redditResponse);
+    logger.debug("redditResponse : ", JSON.stringify(redditResponse));
 
     if (redditResponse.success) {
       await new PostsModel({

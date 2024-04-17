@@ -11,8 +11,3 @@ gitlab_ssh_key
 coverage/
 logs/
 *.log
-
-migration/
-business_not_found.txt
-
-scripts/
