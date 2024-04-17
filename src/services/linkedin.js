@@ -1,6 +1,5 @@
 const fetch = require("node-fetch");
-const fs = require('fs').promises;
-const path = require("path");
+const fs = require("fs").promises;
 const OAuthsModel = require("../models/OAuths");
 const ChannelsModel = require("../models/Channels");
 const WorkspacesModel = require("../models/Workspaces");
@@ -108,22 +107,16 @@ const authCallback = async (request, response) => {
   }
 };
 
-const postToLinkedInImage = async (content, channelId) => {
+const uploadMedia = async (filepath, userid) => {
   try {
-    const channel = await ChannelsModel.findById(channelId);
+    const channel = await ChannelsModel.findOne({
+      user: userid,
+      platform: ChannelType.LinkedIn
+    });
     const { token } = channel;
-
-    // TODO : If using multer to upload image. Can grab with req.file.path
-    // Either pass image path or image buffer
-    // Hardcoded image path because I don't know how to fit multer here
-    const file_path = path.join(__dirname, "test.jpg");
-
-    const imageData = await fs.readFile(file_path);
-
     const linkedInUserId = channel.userInfo.id;
-    // console.log("linkedInUserId : ", linkedInUserId);
+    const imageData = await fs.readFile(filepath);
 
-    // Images must be uploaded to LinkedIn before they can be shared
     const initUploadData = {
       method: "POST",
       headers: {
@@ -142,10 +135,10 @@ const postToLinkedInImage = async (content, channelId) => {
       "https://api.linkedin.com/rest/images?action=initializeUpload",
       initUploadData
     );
+
     const uploadUrlData = await getImageUploadUrl.json();
     // console.log("uploadUrlData : ", uploadUrlData);
     const { uploadUrl, image } = uploadUrlData.value;
-    // console.log("uploadUrl : ", uploadUrl);
 
     const uploadImage = await fetch(uploadUrl, {
       method: "PUT",
@@ -155,6 +148,21 @@ const postToLinkedInImage = async (content, channelId) => {
       body: imageData
     });
     logger.debug("uploadImage : ", uploadImage);
+
+    // returns urn of image to include in api request
+    return image;
+  } catch (error) {
+    logger.error("LinkedInService - uploadMedia() -> error : ", error);
+    throw error;
+  }
+};
+
+// Posting to LinkedIn with Image
+const postToLinkedInImage = async (content, channelId, image) => {
+  try {
+    const channel = await ChannelsModel.findById(channelId);
+    const { token } = channel;
+    const linkedInUserId = channel.userInfo.id;
 
     const data = {
       author: `urn:li:person:${linkedInUserId}`,
@@ -192,10 +200,6 @@ const postToLinkedInImage = async (content, channelId) => {
     );
     logger.debug("response : ", response);
 
-    // Todo : you can remove this if you want
-    return response;
-    // TODO : you can bring this back also
-    /*
     if (response.ok) {
       // const responseData = await response.json();
       // console.log("responseData : ", responseData);
@@ -217,9 +221,8 @@ const postToLinkedInImage = async (content, channelId) => {
       success: false,
       error: errorData
     };
-    */
   } catch (error) {
-    logger.error("postToLinkedIn() -> error : ", error);
+    logger.error("postToLinkedInImage() -> error : ", error);
     throw error;
   }
 };
@@ -288,7 +291,8 @@ const postToLinkedIn = async (content, channelId) => {
 const LinkedInService = {
   authCallback,
   postToLinkedIn,
-  postToLinkedInImage
+  postToLinkedInImage,
+  uploadMedia
 };
 
 module.exports = LinkedInService;

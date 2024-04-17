@@ -138,10 +138,20 @@ const sendHelper = async (channels, user, mediaIdList = {}) => {
   }
 
   if (linkedInChannel) {
-    const linkedInResponse = await LinkedInService.postToLinkedIn(
-      linkedInChannel.content,
-      linkedInChannel.id
-    );
+    let linkedInResponse = null;
+
+    if (ChannelType.LinkedIn in mediaIdList) {
+      linkedInResponse = await LinkedInService.postToLinkedInImage(
+        linkedInChannel.content,
+        linkedInChannel.id,
+        mediaIdList[ChannelType.LinkedIn]
+      );
+    } else {
+      linkedInResponse = await LinkedInService.postToLinkedIn(
+        linkedInChannel.content,
+        linkedInChannel.id
+      );
+    }
 
     logger.debug("linkedInResponse : ", linkedInResponse);
 
@@ -237,9 +247,14 @@ const uploadMediaHelper = async (filePath, channels, user) => {
     mediaIdList[ChannelType.Twitter] = twitterResponse;
   }
 
-  // if (linkedInChannel) {
-
-  // }
+  if (linkedInChannel) {
+    const linkedInResponse = await LinkedInService.uploadMedia(
+      filePath,
+      user._id
+    );
+    logger.debug("linkedInUploadMediaResponse : ", linkedInResponse);
+    mediaIdList[ChannelType.LinkedIn] = linkedInResponse;
+  }
 
   if (redditChannel) {
     mediaIdList[ChannelType.Reddit] = filePath;
@@ -291,9 +306,9 @@ const sendWithMedia = async (request, response) => {
 
     fs.unlink(request.file.path, err => {
       if (err) {
-        console.error(err);
+        logger.error(err);
       } else {
-        console.log("File is deleted.");
+        logger.log("File is deleted.");
       }
     });
 
