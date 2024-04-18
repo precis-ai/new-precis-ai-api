@@ -96,6 +96,7 @@ const signup = async (request, response) => {
         email,
         password: hashedPassword,
         role: UserRoles.ADMIN,
+        status: UserStatus.ACTIVE,
         workspace: workspace._id
       }).save();
 

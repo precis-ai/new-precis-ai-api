@@ -1,4 +1,5 @@
 const Agenda = require("agenda");
+const WorkspacesModel = require("../models/Workspaces");
 const PostsService = require("./posts");
 const { INTERNAL_SERVER_ERROR_MESSAGE } = require("../utils/constants");
 const Config = require("../utils/config");
@@ -33,6 +34,13 @@ const schedule = async (request, response) => {
       channels,
       user: request.user
     });
+
+    await WorkspacesModel.findOneAndUpdate(
+      { _id: request.user.workspace._id },
+      {
+        postScheduled: true
+      }
+    );
 
     return response.status(200).json({
       success: true,
