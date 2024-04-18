@@ -160,12 +160,14 @@ const authCallback = async (request, response) => {
 const tweet = async (content, userId, mediaId) => {
   try {
     const { twitterClient } = await getClient(userId);
+
     if (mediaId) {
       return await twitterClient.v2.tweet({
         text: content,
         media: { mediaIds: [mediaId] }
       });
     }
+
     return await twitterClient.v2.tweet(content);
   } catch (error) {
     logger.error("TwitterService - tweet() : ", error);

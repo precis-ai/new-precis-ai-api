@@ -135,6 +135,7 @@ const sendHelper = async (channels, user, mediaIdList = {}) => {
         ? mediaIdList[ChannelType.Twitter]
         : null
     );
+
     logger.debug("twitterResponse : ", twitterResponse);
 
     await new PostsModel({
