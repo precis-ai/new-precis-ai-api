@@ -255,31 +255,48 @@ const post = async (content, userId, sr, title, filePath) => {
   }
 
   try {
-    const headers = {
-      Authorization: "Bearer " + account.token
-    };
+    let u = new URLSearchParams({
+      sr,
+      title,
+      text: content,
+      kind: "self"
+    }).toString();
 
-    const bodyForm = new FormData();
-    bodyForm.append("filepath", filePath);
-    bodyForm.append("mimetype", "image/jpeg");
-    const uploadURLResponse = await fetch(
-      `https://oauth.reddit.com/api/media/asset.json`,
-      {
-        method: "POST",
-        headers,
-        body: bodyForm
-      }
-    ).then(response => response.json());
+    if (filePath) {
+      const headers = {
+        Authorization: "Bearer " + account.token
+      };
 
-    console.log(uploadURLResponse);
+      const bodyForm = new FormData();
+      bodyForm.append("filepath", filePath);
+      bodyForm.append("mimetype", "image/jpeg");
+      const uploadURLResponse = await fetch(
+        `https://oauth.reddit.com/api/media/asset.json`,
+        {
+          method: "POST",
+          headers,
+          body: bodyForm
+        }
+      ).then(response => response.json());
 
-    const file = await fs.readFile(filePath);
-    const fileName = path.basename(filePath);
-    const uploadURL = `https:${uploadURLResponse.args.action}`;
-    const { fields } = uploadURLResponse.args;
-    // const listenWSUrl = uploadURLResponse.asset.websocket_url;
+      console.log(uploadURLResponse);
 
-    const imageURL = await uploadToAWS(uploadURL, fields, file, fileName);
+      const file = await fs.readFile(filePath);
+      const fileName = path.basename(filePath);
+      const uploadURL = `https:${uploadURLResponse.args.action}`;
+      const { fields } = uploadURLResponse.args;
+      // const listenWSUrl = uploadURLResponse.asset.websocket_url;
+
+      const imageURL = await uploadToAWS(uploadURL, fields, file, fileName);
+
+      u = new URLSearchParams({
+        sr,
+        title,
+        text: content,
+        kind: "image",
+        url: imageURL
+      }).toString();
+    }
 
     logger.debug("token : ", account.token);
 
@@ -288,32 +305,11 @@ const post = async (content, userId, sr, title, filePath) => {
       Authorization: "Bearer " + account.token
     };
 
-    // const u = new URLSearchParams({
-    //   sr: "u_TeacherDismal6302",
-    //   title,
-    //   text: content,
-    //   kind: "self"
-    //   // url: "https://i.ibb.co/cNfXLhv/golden-state-warriors-logo.jpg"
-    // }).toString();
+    console.log(postHeaders);
 
     logger.debug("sr : ", sr);
     logger.debug("title : ", title.trim());
     logger.debug("content : ", content.trim());
-
-    const u = filePath
-      ? new URLSearchParams({
-          sr,
-          title,
-          text: content,
-          kind: "image",
-          url: imageURL
-        }).toString()
-      : new URLSearchParams({
-          sr,
-          title,
-          text: content,
-          kind: "self"
-        }).toString();
 
     logger.debug("u : ", u);
 
@@ -321,7 +317,7 @@ const post = async (content, userId, sr, title, filePath) => {
       `https://oauth.reddit.com/api/submit.json?${u}`,
       {
         method: "POST",
-        postHeaders,
+        headers: postHeaders,
         body: JSON.stringify({
           api_type: "json",
           resubmit: "true",
@@ -331,8 +327,18 @@ const post = async (content, userId, sr, title, filePath) => {
     );
 
     const redditResponse = await redditRequest.json();
-
     console.log(redditResponse);
+
+    if (redditResponse.success === false) {
+      logger.error("RedditService - post() : ", JSON.stringify(redditResponse));
+      // eslint-disable-next-line no-throw-literal
+      throw {
+        status: 400,
+        error: true,
+        message: "reddit post failed"
+      };
+    }
+
     return redditResponse;
   } catch (error) {
     logger.error("RedditService - uploadMedia() : ", error);
