@@ -1,5 +1,6 @@
 const express = require("express");
 const multer = require("multer");
+const path = require("path");
 const PostsService = require("../../services/posts");
 const RedditService = require("../../services/reddit");
 const LinkedInService = require("../../services/linkedin");
@@ -84,7 +85,17 @@ router.get(
   }
 );
 
-const upload2 = multer({ dest: "uploads/" });
+const storage2 = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + "-" + Date.now() + ext);
+  }
+});
+
+const upload2 = multer({ storage: storage2 });
 
 router.post(
   "/transcribeFile",
