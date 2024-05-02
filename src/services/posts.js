@@ -184,7 +184,7 @@ const sendHelper = async (channels, user, mediaIdList = {}) => {
     const redditResponse = await RedditService.post(
       redditChannel.content,
       user._id,
-      "r/precisai",
+      "r/precisaiImageUpload",
       redditChannel.title,
       ChannelType.Reddit in mediaIdList ? mediaIdList[ChannelType.Reddit] : null
     );
@@ -297,32 +297,32 @@ const uploadMedia = async (request, response) => {
   }
 };
 
+const sendWithMediaHelper = async (channelsJson, file, user) => {
+  const channels = JSON.parse(channelsJson);
+
+  const mediaIdList = await uploadMediaHelper(file.path, channels, user);
+
+  await sendHelper(channels, user, mediaIdList);
+
+  await WorkspacesModel.findOneAndUpdate(
+    { _id: user.workspace._id },
+    {
+      postSent: true
+    }
+  );
+
+  fs.unlink(file.path, err => {
+    if (err) {
+      logger.error(err);
+    } else {
+      logger.log("File is deleted.");
+    }
+  });
+};
+
 const sendWithMedia = async (request, response) => {
   try {
-    const channels = JSON.parse(request.body.channels);
-
-    const mediaIdList = await uploadMediaHelper(
-      request.file.path,
-      channels,
-      request.user
-    );
-
-    await sendHelper(channels, request.user, mediaIdList);
-
-    await WorkspacesModel.findOneAndUpdate(
-      { _id: request.user.workspace._id },
-      {
-        postSent: true
-      }
-    );
-
-    fs.unlink(request.file.path, err => {
-      if (err) {
-        logger.error(err);
-      } else {
-        logger.log("File is deleted.");
-      }
-    });
+    sendWithMediaHelper(request.body.channels, request.file, request.user);
 
     return response.status(200).json({
       success: true,
@@ -343,7 +343,8 @@ const PostsService = {
   send,
   sendHelper,
   uploadMedia,
-  sendWithMedia
+  sendWithMedia,
+  sendWithMediaHelper
 };
 
 module.exports = PostsService;

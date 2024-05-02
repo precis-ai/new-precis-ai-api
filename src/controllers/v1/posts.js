@@ -11,6 +11,17 @@ const WhisperService = require("../../services/whisper");
 
 const router = express.Router();
 
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename(req, file, cb) {
+    const fileName = `${Date.now()}-${file.originalname}`;
+    cb(null, fileName);
+  }
+});
+const upload = multer({ storage });
+
 router.get(
   "/",
   AuthenticationMiddleware.authenticate.bind(),
@@ -67,6 +78,15 @@ router.post(
   }
 );
 
+router.post(
+  "/scheduleMediaPost",
+  AuthenticationMiddleware.authenticate.bind(),
+  upload.single("file"),
+  async (request, response) => {
+    return await ScheduleService.scheduleMediaPost(request, response);
+  }
+);
+
 router.get(
   "/makeImage",
   // AuthenticationMiddleware.authenticate.bind(),
@@ -95,18 +115,6 @@ router.post(
     return await WhisperService.transcribeFile(request, response);
   }
 );
-
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename(req, file, cb) {
-    const fileName = `${Date.now()}-${file.originalname}`;
-    cb(null, fileName);
-  }
-});
-
-const upload = multer({ storage });
 
 router.post(
   "/sendWithMedia",
