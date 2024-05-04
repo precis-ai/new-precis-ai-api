@@ -164,7 +164,7 @@ const tweet = async (content, userId, mediaId) => {
     if (mediaId) {
       return await twitterClient.v2.tweet({
         text: content,
-        media: { mediaIds: [mediaId] }
+        media: { media_ids: [mediaId] }
       });
     }
 

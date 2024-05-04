@@ -21,7 +21,7 @@ const makeImageHelper = async content => {
 // Requires 'content' to be passed in the query
 // Content should be the text of the post
 const makeImage = async (req, res) => {
-  const { content } = req.query;
+  const { content } = req.body;
 
   if (!content) {
     return res

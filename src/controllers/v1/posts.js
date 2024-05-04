@@ -87,9 +87,9 @@ router.post(
   }
 );
 
-router.get(
-  "/makeImage",
-  // AuthenticationMiddleware.authenticate.bind(),
+router.post(
+  "/image",
+  AuthenticationMiddleware.authenticate.bind(),
   async (request, response) => {
     return await DalleService.makeImage(request, response);
   }
@@ -108,7 +108,7 @@ const storage2 = multer.diskStorage({
 const upload2 = multer({ storage: storage2 });
 
 router.post(
-  "/transcribeFile",
+  "/transcribe",
   // AuthenticationMiddleware.authenticate.bind(),
   upload2.single("file"),
   async (request, response) => {
@@ -117,7 +117,7 @@ router.post(
 );
 
 router.post(
-  "/sendWithMedia",
+  "/send/media",
   AuthenticationMiddleware.authenticate.bind(),
   upload.single("file"),
   async (request, response) => {

@@ -10,6 +10,8 @@ const {
 const logger = require("../utils/logger");
 const OpenAIService = require("./openai");
 const LinkedInService = require("./linkedin");
+const AnthropicService = require("./anthropic");
+const TrainedGPTService = require("./model-fine-tuned");
 
 const list = async (request, response) => {
   try {
@@ -69,37 +71,147 @@ const create = async (request, response) => {
         .json({ success: false, message: "Summary is required." });
     }
 
-    const twitterPost = await OpenAIService.completeChat(
+    // ------------------- TWITTER -------------------
+
+    const twitterPrompt = `you are a professional advertisement creator.
+    the tweet needs to be less than 250 characters including hashtags and emojis.
+    write an advertising tweet for \n
+    ${summary}`;
+
+    const openAItwitterPost = await OpenAIService.completeChat(
       `you are a professional advertisement creator.
        the tweet needs to be less than 250 characters including hashtags and emojis.
        write an advertising tweet for \n
        ${summary}`
     );
 
-    logger.debug("twitterPost : ", twitterPost);
+    logger.debug("openAItwitterPost : ", openAItwitterPost);
 
-    const linkedInPost = await OpenAIService.completeChat(
-      `Create a LinkedIn post for the following summary, use relevant hashtags : "${summary}"`
-    );
+    // const twitterAnthropicResponse = await AnthropicService.createMessage(
+    //   twitterPrompt
+    // );
 
-    logger.debug("linkedInPost : ", linkedInPost);
+    // const twitterAnthropicMessages = [];
 
-    const redditPost = await OpenAIService.completeChat(
-      `Create a Reddit post in the given format. 
-        Format: 
-          Title: ...
-          Post: ...
-      for the following summary : "${summary}"`
-    );
+    // twitterAnthropicResponse.content.forEach(elem => {
+    //   if (elem.type === "text") {
+    //     twitterAnthropicMessages.push(elem.text);
+    //   }
+    // });
 
-    logger.debug("redditPost : ", redditPost);
+    // const anthropicTwitterPost = twitterAnthropicMessages.join(" ");
+
+    // logger.debug("anthropicTwitterPost : ", anthropicTwitterPost);
+
+    // const customModelTwitterResponse = await TrainedGPTService.makeTweet(
+    //   summary
+    // );
+
+    // logger.debug("customModelTwitterResponse : ", customModelTwitterResponse);
+
+    // const customModelTwitterPost = customModelTwitterResponse.map(
+    //   elem => elem.message.content
+    // );
+
+    const twitter = {
+      openai: openAItwitterPost
+      // anthropic: anthropicTwitterPost,
+      // custom: customModelTwitterPost
+    };
+
+    // ------------------- LINKEDIN -------------------
+
+    const linkedInPrompt = `Create a LinkedIn post for the following summary, use relevant hashtags : "${summary}"`;
+
+    const linkedInOpenAiPost = await OpenAIService.completeChat(linkedInPrompt);
+
+    logger.debug("linkedInOpenAiPost : ", linkedInOpenAiPost);
+
+    // const linkedInAnthropicResponse = await AnthropicService.createMessage(
+    //   linkedInPrompt
+    // );
+
+    // const linkedInAnthropicMessages = [];
+
+    // linkedInAnthropicResponse.content.forEach(elem => {
+    //   if (elem.type === "text") {
+    //     linkedInAnthropicMessages.push(elem.text);
+    //   }
+    // });
+
+    // const linkedInAnthropicTwitterPost = linkedInAnthropicMessages.join(" ");
+
+    // logger.debug(
+    //   "linkedInAnthropicTwitterPost : ",
+    //   linkedInAnthropicTwitterPost
+    // );
+
+    // const linkedInCustomModelResponse = await TrainedGPTService.makeTweet(
+    //   summary
+    // );
+
+    // logger.debug("linkedInCustomModelResponse : ", linkedInCustomModelResponse);
+
+    // const customModelLinkedInPost = linkedInCustomModelResponse.map(
+    //   elem => elem.message.content
+    // );
+
+    const linkedIn = {
+      openai: linkedInOpenAiPost
+      // anthropic: linkedInAnthropicTwitterPost,
+      // custom: customModelLinkedInPost
+    };
+
+    // ------------------- REDDIT -------------------
+
+    const redditPrompt = `Create a Reddit post in the given format. 
+    Format: 
+      Title: ...
+      Post: ...
+  for the following summary : "${summary}"`;
+
+    const redditPostOpenAI = await OpenAIService.completeChat(redditPrompt);
+
+    // const redditAnthropicResponse = await AnthropicService.createMessage(
+    //   redditPrompt
+    // );
+
+    // const redditAnthropicMessages = [];
+
+    // redditAnthropicResponse.content.forEach(elem => {
+    //   if (elem.type === "text") {
+    //     redditAnthropicMessages.push(elem.text);
+    //   }
+    // });
+
+    // const redditAnthropicTwitterPost = redditAnthropicMessages.join(" ");
+
+    // logger.debug("redditAnthropicTwitterPost : ", redditAnthropicTwitterPost);
+
+    // const redditCustomModelResponse = await TrainedGPTService.makeTweet(
+    //   summary
+    // );
+
+    // logger.debug("redditCustomModelResponse : ", redditCustomModelResponse);
+
+    // const customModelRedditPost = redditCustomModelResponse.map(
+    //   elem => elem.message.content
+    // );
+
+    // logger.debug("customModelRedditPost : ", customModelRedditPost);
+
+    const reddit = {
+      openai: redditPostOpenAI
+      // anthropic: redditAnthropicTwitterPost,
+      // custom: customModelRedditPost
+    };
 
     return response.status(200).json({
       success: true,
       data: {
-        twitterPost,
-        linkedInPost,
-        redditPost
+        twitter,
+        linkedIn,
+        reddit
       }
     });
   } catch (error) {
@@ -128,12 +240,18 @@ const sendHelper = async (channels, user, mediaIdList = {}) => {
   );
 
   if (twitterChannel) {
+    console.log(
+      "###### mediaIdList[ChannelType.Twitter] : ",
+      mediaIdList[ChannelType.Twitter]
+    );
+
     const twitterResponse = await TwitterService.tweet(
       twitterChannel.content,
       user._id,
-      ChannelType.Twitter in mediaIdList
-        ? mediaIdList[ChannelType.Twitter]
-        : null
+      mediaIdList[ChannelType.Twitter]
+      // ChannelType.Twitter in mediaIdList
+      //   ? mediaIdList[ChannelType.Twitter]
+      //   : null
     );
 
     logger.debug("twitterResponse : ", twitterResponse);
@@ -184,7 +302,8 @@ const sendHelper = async (channels, user, mediaIdList = {}) => {
     const redditResponse = await RedditService.post(
       redditChannel.content,
       user._id,
-      "r/precisaiImageUpload",
+      // "r/precisaiImageUpload",
+      "r/precisai",
       redditChannel.title,
       ChannelType.Reddit in mediaIdList ? mediaIdList[ChannelType.Reddit] : null
     );
@@ -300,7 +419,15 @@ const uploadMedia = async (request, response) => {
 const sendWithMediaHelper = async (channelsJson, file, user) => {
   const channels = JSON.parse(channelsJson);
 
+  console.log("channels : ", channels);
+
+  console.log("file.path : ", file.path);
+
+  console.log("user : ", user);
+
   const mediaIdList = await uploadMediaHelper(file.path, channels, user);
+
+  console.log("mediaIdList : ", mediaIdList);
 
   await sendHelper(channels, user, mediaIdList);
 
@@ -322,7 +449,11 @@ const sendWithMediaHelper = async (channelsJson, file, user) => {
 
 const sendWithMedia = async (request, response) => {
   try {
-    sendWithMediaHelper(request.body.channels, request.file, request.user);
+    await sendWithMediaHelper(
+      request.body.channels,
+      request.file,
+      request.user
+    );
 
     return response.status(200).json({
       success: true,

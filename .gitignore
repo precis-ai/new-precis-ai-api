@@ -11,3 +11,5 @@ gitlab_ssh_key
 coverage/
 logs/
 *.log
+
+uploads/
