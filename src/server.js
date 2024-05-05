@@ -83,10 +83,6 @@ app.use(
 
 // ROUTES
 
-app.get("/", (req, res) => {
-  res.status(200).json({ success: true, message: "Howdy!!!" });
-});
-
 app.use("/v1/auth", auth);
 app.use("/v1/users", users);
 app.use("/v1/marketing-strategy", marketingStrategy);
@@ -96,6 +92,10 @@ app.use("/v1/ai-tools", aiTools);
 
 app.get("/v1", (req, res) => {
   res.status(200).json({ success: true, message: "Backend Success!!!" });
+});
+
+app.get("/", (req, res) => {
+  res.status(200).json({ success: true, message: "Howdy!!!" });
 });
 
 app.listen(Config.PORT, () => {
