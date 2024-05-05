@@ -52,7 +52,9 @@ app.use(
 const whitelist = [
   // local
   "http://localhost:3000",
-  "https://localhost:3000"
+  "https://localhost:3000",
+  "http://precisai.net",
+  "https://precisai.net"
 ];
 
 app.use(
