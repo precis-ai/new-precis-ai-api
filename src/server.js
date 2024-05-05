@@ -92,6 +92,10 @@ app.use("/v1/channels", channels);
 app.use("/v1/posts", posts);
 app.use("/v1/ai-tools", aiTools);
 
+app.get("/v1", (req, res) => {
+  res.status(200).json({ success: true, message: "Backend Success!!!" });
+});
+
 app.listen(Config.PORT, () => {
   try {
     logger.info(`App is now running on port ${Config.PORT}!!!`);
