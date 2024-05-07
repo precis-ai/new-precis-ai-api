@@ -56,7 +56,11 @@ const whitelist = [
   "http://localhost:80",
   "https://localhost:80",
   "http://api.precisai.net",
-  "https://api.precisai.net"
+  "https://api.precisai.net",
+  "http://precisai.net",
+  "https://precisai.net",
+  "http://app.precisai.net",
+  "https://app.precisai.net"
 ];
 
 app.use(
