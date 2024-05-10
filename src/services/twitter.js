@@ -40,8 +40,6 @@ const getClient = async userId => {
   }
 };
 
-const CALLBACK_URL = "http://localhost:3000/auth/twitter/callback";
-
 const generateAuthLink = async (request, response) => {
   try {
     const client = new TwitterApi({
@@ -49,9 +47,12 @@ const generateAuthLink = async (request, response) => {
       appSecret: Config.TWITTER_API_SECRET
     });
 
-    const authLink = await client.generateAuthLink(CALLBACK_URL, {
-      linkMode: "authorize"
-    });
+    const authLink = await client.generateAuthLink(
+      Config.TWITTER_CALLBACK_URI,
+      {
+        linkMode: "authorize"
+      }
+    );
 
     logger.debug("authLink : ", authLink);
 
