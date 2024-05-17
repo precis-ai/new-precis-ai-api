@@ -1,11 +1,25 @@
-# precis-ai-api
+# Precis AI Server
 
-All things backend!
+All things backend for Precis AI!
 
-### Steps to run
+## Installation
 
-1. `nvm use`
+Install [nvm](https://github.com/nvm-sh/nvm)
 
-2. `yarn`
+```bash
+$ nvm use
+```
 
-3. `yarn run dev`
+```bash
+$ yarn
+```
+
+## Setup
+
+Add necessary environment variables, check out `.env.example` file
+
+## Steps to run
+
+```bash
+$ yarn dev
+```
